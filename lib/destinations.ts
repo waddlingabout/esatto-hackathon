@@ -4,6 +4,8 @@ export type Destination = {
   title: string;
   description: string;
   keywords?: readonly string[];
+  // Realistic user phrasings that should land here; rendered as few-shot examples.
+  examples?: readonly string[];
 };
 
 // Single source of truth for where the router may send users.
@@ -15,6 +17,7 @@ export const destinations = [
     title: "Home",
     description: "Landing page, overview, start page",
     keywords: ["home", "start", "frontpage"],
+    examples: ["take me back to the beginning", "go to the main page"],
   },
   {
     id: "settings",
@@ -22,9 +25,12 @@ export const destinations = [
     title: "Settings",
     description: "Account settings, change password, email, notifications",
     keywords: ["settings", "password", "account", "notifications"],
+    examples: [
+      "how do I reset my password",
+      "turn off email notifications",
+      "I want to update my email address",
+    ],
   },
 ] as const satisfies readonly Destination[];
 
 export type DestinationId = (typeof destinations)[number]["id"];
-
-export const FALLBACK_ID = "none";
