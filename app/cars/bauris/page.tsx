@@ -9,14 +9,9 @@ export const metadata: Metadata = {
   description: "The Bauris hybrid liftback. Pulls away on electric, recharges as you brake. Plug-in on Limited.",
 };
 
-export default async function BaurisPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
-}) {
-  const { q } = await searchParams;
+export default function BaurisPage({ searchParams }: PageProps<"/cars/bauris">) {
   return (
-    <ProductPage car={bauris} silhouette={<BaurisSilhouette />} q={typeof q === "string" ? q : undefined}>
+    <ProductPage car={bauris} silhouette={<BaurisSilhouette />} searchParams={searchParams}>
       <HowHybridWorks />
     </ProductPage>
   );

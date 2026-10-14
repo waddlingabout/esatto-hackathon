@@ -56,9 +56,13 @@ export function SiteFooter() {
   );
 }
 
+export type SearchParams = Promise<{ [key: string]: string | string[] | undefined }>;
+
 // Shown when the router sent the visitor here with ?q=<their prompt>.
-export function AskedChip({ q }: { q?: string }) {
-  if (!q) return null;
+// Reads searchParams itself so only this chip waits on the request (render it inside <Suspense>).
+export async function AskedChip({ searchParams }: { searchParams: SearchParams }) {
+  const { q } = await searchParams;
+  if (typeof q !== "string" || !q) return null;
   return (
     <div className="inline-flex items-center gap-2 self-start rounded-pill bg-lane-tint px-3.5 py-2 text-sm font-medium text-lane-deep">
       <Icon name="arrow" size={16} strokeWidth={2.2} />

@@ -9,17 +9,11 @@ export const metadata: Metadata = {
   description: "The normal car. A dependable, affordable compact sedan with a 2.0L gas engine and room for five.",
 };
 
-export default async function BorollaPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
-}) {
-  const { q } = await searchParams;
+export default function BorollaPage({ searchParams }: PageProps<"/cars/borolla">) {
   return (
     <ProductPage
       car={borolla}
-      silhouette={<BorollaSilhouette />}
-      q={typeof q === "string" ? q : undefined}
+      silhouette={<BorollaSilhouette />} searchParams={searchParams}
     >
       <OwnershipCosts />
     </ProductPage>

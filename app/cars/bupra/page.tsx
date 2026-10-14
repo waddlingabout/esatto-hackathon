@@ -9,17 +9,11 @@ export const metadata: Metadata = {
   description: "The Boyota Bupra: a light, rear-drive 2-door sports coupe with launch control and a 6-speed manual.",
 };
 
-export default async function BupraPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
-}) {
-  const { q } = await searchParams;
+export default function BupraPage({ searchParams }: PageProps<"/cars/bupra">) {
   return (
     <ProductPage
       car={bupra}
-      silhouette={<BupraSilhouette />}
-      q={typeof q === "string" ? q : undefined}
+      silhouette={<BupraSilhouette />} searchParams={searchParams}
     >
       <TrackMode />
     </ProductPage>

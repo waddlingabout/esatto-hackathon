@@ -6,6 +6,7 @@ import { Button } from "react-aria-components/Button";
 import { Form } from "react-aria-components/Form";
 import { Input, TextField } from "react-aria-components/TextField";
 import { Icon } from "@/components/boyota/icons";
+import { focusRing } from "@/components/boyota/styles";
 
 type Message =
   | { kind: "assistant"; text: string }
@@ -30,8 +31,6 @@ const SUGGESTIONS = [
 // Matches the history limit in app/api/navigate/route.ts.
 const MAX_HISTORY = 10;
 
-const focusRing =
-  "outline-none data-[focus-visible]:outline-2 data-[focus-visible]:outline-offset-2 data-[focus-visible]:outline-ink";
 const bubble = "max-w-[85%] px-4 py-3.5 text-[17px] leading-normal";
 // Bubble radii from design-system/README.md → Chat bubbles.
 const assistantShape = "self-start rounded-[4px_16px_16px_16px]";

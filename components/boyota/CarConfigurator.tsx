@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, type CSSProperties, type ReactNode } from "react";
+import { Radio, RadioGroup } from "react-aria-components/RadioGroup";
 import type { Car } from "@/lib/cars/types";
+import { focusRing } from "./styles";
 
 type Props = {
   car: Car;
@@ -73,59 +75,51 @@ export function CarConfigurator({ car, silhouette, chip }: Props) {
                   <span className="text-[13px] text-steel">Color</span>
                   <span className="font-semibold">{color.name}</span>
                 </div>
-                <div role="radiogroup" aria-label="Paint color" className="flex gap-2">
-                  {car.colors.map((c) => {
-                    const checked = c.id === color.id;
-                    return (
-                      <button
-                        key={c.id}
-                        type="button"
-                        role="radio"
-                        aria-checked={checked}
-                        aria-label={c.name}
-                        onClick={() => setColorId(c.id)}
-                        className={`size-11 cursor-pointer rounded-pill border-2 bg-transparent p-1 ${checked ? "border-ink" : "border-transparent"}`}
-                      >
-                        <span
-                          className="block size-full rounded-pill shadow-[inset_0_0_0_1px_rgba(18,20,23,0.18)]"
-                          style={{ background: c.hex }}
-                        />
-                      </button>
-                    );
-                  })}
-                </div>
+                <RadioGroup
+                  aria-label="Paint color"
+                  value={color.id}
+                  onChange={setColorId}
+                  orientation="horizontal"
+                  className="flex gap-2"
+                >
+                  {car.colors.map((c) => (
+                    <Radio
+                      key={c.id}
+                      value={c.id}
+                      aria-label={c.name}
+                      className={`${focusRing} size-11 cursor-pointer rounded-pill border-2 border-transparent p-1 data-[selected]:border-ink`}
+                    >
+                      <span
+                        className="block size-full rounded-pill inset-ring inset-ring-ink/18"
+                        style={{ background: c.hex }}
+                      />
+                    </Radio>
+                  ))}
+                </RadioGroup>
               </div>
             </div>
 
-            <div
-              role="radiogroup"
+            <RadioGroup
               aria-label="Trim"
+              value={trim.id}
+              onChange={setTrimId}
+              orientation="horizontal"
               className="grid gap-2"
               style={{ gridTemplateColumns: `repeat(${car.trims.length}, minmax(0, 1fr))` }}
             >
-              {car.trims.map((t) => {
-                const selected = t.id === trim.id;
-                return (
-                  <button
-                    key={t.id}
-                    type="button"
-                    role="radio"
-                    aria-checked={selected}
-                    onClick={() => setTrimId(t.id)}
-                    className={`flex min-h-16 cursor-pointer flex-col gap-0.5 rounded-trim px-3.5 py-2.5 text-left ${
-                      selected
-                        ? "border-2 border-ink bg-ink text-white"
-                        : "border border-line bg-surface text-ink"
-                    }`}
-                  >
-                    <span className="font-mono text-[15px] font-medium">{t.name}</span>
-                    <span className={`text-[13px] ${selected ? "text-on-ink-muted" : "text-steel"}`}>
-                      {t.blurb}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
+              {car.trims.map((t) => (
+                <Radio
+                  key={t.id}
+                  value={t.id}
+                  className={`${focusRing} group flex min-h-16 cursor-pointer flex-col gap-0.5 rounded-trim border border-line bg-surface px-3.5 py-2.5 text-left text-ink data-[selected]:border-2 data-[selected]:border-ink data-[selected]:bg-ink data-[selected]:text-white`}
+                >
+                  <span className="font-mono text-[15px] font-medium">{t.name}</span>
+                  <span className="text-[13px] text-steel group-data-[selected]:text-on-ink-muted">
+                    {t.blurb}
+                  </span>
+                </Radio>
+              ))}
+            </RadioGroup>
           </div>
         </div>
       </section>

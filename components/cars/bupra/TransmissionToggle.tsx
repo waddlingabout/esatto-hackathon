@@ -1,76 +1,61 @@
 "use client";
 
-import { useRef, useState, type KeyboardEvent } from "react";
+import { useState } from "react";
+import { Label, Radio, RadioGroup } from "react-aria-components/RadioGroup";
+import { focusRing } from "@/components/boyota/styles";
 
 const options = [
   {
     id: "manual",
     name: "Manual",
-    line: "6-speed manual with auto rev-matching. Three pedals, every shift yours.",
-    spec: "0–60 mph 4.1 s (est.)",
+    blurb: "Three pedals",
+    line: "6-speed manual with auto rev-matching. Every shift yours.",
+    zeroToSixty: "4.1 s",
   },
   {
     id: "automatic",
     name: "Automatic",
+    blurb: "Paddle shifters",
     line: "8-speed automatic with paddles. Faster shifts, easier traffic.",
-    spec: "0–60 mph 3.9 s (est.)",
+    zeroToSixty: "3.9 s",
   },
 ] as const;
 
 type OptionId = (typeof options)[number]["id"];
 
+// A surface panel on the ink band, so the trim selector and spec tile keep their light styles.
 export function TransmissionToggle() {
   const [selected, setSelected] = useState<OptionId>("manual");
-  const refs = useRef<(HTMLButtonElement | null)[]>([]);
   const current = options.find((o) => o.id === selected) ?? options[0];
 
-  function onKeyDown(e: KeyboardEvent<HTMLButtonElement>, i: number) {
-    if (!["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(e.key)) return;
-    e.preventDefault();
-    const step = e.key === "ArrowLeft" || e.key === "ArrowUp" ? -1 : 1;
-    const next = (i + step + options.length) % options.length;
-    setSelected(options[next].id);
-    refs.current[next]?.focus();
-  }
-
   return (
-    <div className="flex flex-col gap-5 rounded-panel border border-on-ink-muted/30 p-6">
-      <span id="transmission-label" className="text-[13px] text-on-ink-muted">
-        Transmission
-      </span>
-      <div
-        role="radiogroup"
-        aria-labelledby="transmission-label"
-        className="grid grid-cols-2 gap-2"
+    <div className="flex flex-col gap-5 rounded-panel bg-surface p-6 text-ink">
+      <RadioGroup
+        value={selected}
+        onChange={(v) => setSelected(v as OptionId)}
+        orientation="horizontal"
+        className="flex flex-col gap-2"
       >
-        {options.map((o, i) => {
-          const checked = o.id === selected;
-          return (
-            <button
+        <Label className="text-[13px] text-steel">Transmission</Label>
+        <div className="grid grid-cols-2 gap-2">
+          {options.map((o) => (
+            <Radio
               key={o.id}
-              ref={(el) => {
-                refs.current[i] = el;
-              }}
-              type="button"
-              role="radio"
-              aria-checked={checked}
-              tabIndex={checked ? 0 : -1}
-              onClick={() => setSelected(o.id)}
-              onKeyDown={(e) => onKeyDown(e, i)}
-              className={`min-h-14 cursor-pointer rounded-trim px-3.5 py-2.5 font-mono text-[15px] font-medium ${
-                checked
-                  ? "border-2 border-white bg-white text-ink"
-                  : "border border-on-ink-muted bg-transparent text-white"
-              }`}
+              value={o.id}
+              className={`${focusRing} group flex min-h-16 cursor-pointer flex-col gap-0.5 rounded-trim border border-line bg-surface px-3.5 py-2.5 text-ink data-[selected]:border-2 data-[selected]:border-ink data-[selected]:bg-ink data-[selected]:text-white`}
             >
-              {o.name}
-            </button>
-          );
-        })}
-      </div>
-      <div aria-live="polite" className="flex flex-col gap-2">
-        <span className="font-mono text-[28px] font-medium">{current.spec}</span>
-        <p className="m-0 text-base leading-[1.55] text-on-ink-muted">{current.line}</p>
+              <span className="font-mono text-[15px] font-medium">{o.name}</span>
+              <span className="text-[13px] text-steel group-data-[selected]:text-on-ink-muted">
+                {o.blurb}
+              </span>
+            </Radio>
+          ))}
+        </div>
+      </RadioGroup>
+      <div aria-live="polite" className="flex flex-col gap-1.5">
+        <span className="font-mono text-[44px] font-medium">{current.zeroToSixty}</span>
+        <span className="text-sm text-steel">0–60 mph (est.)</span>
+        <p className="m-0 pt-2 text-base leading-[1.55] text-body-muted">{current.line}</p>
       </div>
     </div>
   );
