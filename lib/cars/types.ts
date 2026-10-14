@@ -25,11 +25,15 @@ export type CompareRow = {
   mono?: boolean; // numbers and prices use Plex Mono
 };
 
+// Plain-text summary of a car-specific section rendered below the configurator.
+export type PageSection = { heading: string; summary: string };
+
 export type Car = {
   slug: string;
   name: string; // "Boyota Borolla"
   model: string; // "Borolla", the second line of the hero title
   eyebrow: string; // "2027 · Compact sedan"
+  summary: string; // the page's meta description
   tagline: string;
   colors: CarColor[];
   defaultColorId: string;
@@ -40,4 +44,6 @@ export type Car = {
   features: Feature[];
   compareRows: CompareRow[];
   askAgainPlaceholder: string; // "Something bigger, with seven seats…"
+  // Feeds the router's product index. Keep in sync with components/cars/<slug>/*.
+  pageSections?: PageSection[];
 };

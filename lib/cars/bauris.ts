@@ -6,6 +6,8 @@ export const bauris: Car = {
   name: "Boyota Bauris",
   model: "Bauris",
   eyebrow: "2027 · Hybrid liftback",
+  summary:
+    "The Bauris hybrid liftback. Pulls away on electric, recharges as you brake. Plug-in on Limited.",
   tagline:
     "Fewer stops for fuel, more room for the rest. A slippery liftback that pulls away on electric and recharges as you brake.",
   colors: [
@@ -72,4 +74,11 @@ export const bauris: Car = {
     { label: "Seats", values: ["Cloth", "Heated fabric", "Heated and ventilated leather"] },
   ],
   askAgainPlaceholder: "Something faster, with two doors…",
+  pageSections: [
+    {
+      heading: "How the hybrid works",
+      summary:
+        "Pulls away on electric in slow traffic, the petrol engine joins in when merging or climbing, and braking recharges the battery with no cable needed. Limited adds a plug-in battery for up to 44 miles on electric alone (est.).",
+    },
+  ],
 };

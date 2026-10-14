@@ -9,8 +9,9 @@ export type Destination = {
 };
 
 // Single source of truth for where the router may send users.
-// `description` is what the model routes on; `keywords` power the cheap pre-match.
-// Keep keywords unique per destination so the pre-match stays unambiguous.
+// `description` plus the generated product details (lib/generated/product-index.json)
+// is what the model routes on. `keywords` power the cheap pre-match, which fires only
+// when the whole prompt is one keyword. Keep them unique per destination.
 export const destinations = [
   {
     id: "home",

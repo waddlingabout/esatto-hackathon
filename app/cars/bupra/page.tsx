@@ -6,7 +6,7 @@ import { bupra } from "@/lib/cars/bupra";
 
 export const metadata: Metadata = {
   title: "Boyota Bupra",
-  description: "The Boyota Bupra: a light, rear-drive 2-door sports coupe with launch control and a 6-speed manual.",
+  description: bupra.summary,
 };
 
 export default function BupraPage({ searchParams }: PageProps<"/cars/bupra">) {

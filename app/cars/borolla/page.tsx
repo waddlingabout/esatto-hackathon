@@ -6,7 +6,7 @@ import { borolla } from "@/lib/cars/borolla";
 
 export const metadata: Metadata = {
   title: "Boyota Borolla",
-  description: "The normal car. A dependable, affordable compact sedan with a 2.0L gas engine and room for five.",
+  description: borolla.summary,
 };
 
 export default function BorollaPage({ searchParams }: PageProps<"/cars/borolla">) {

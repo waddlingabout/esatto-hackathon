@@ -4,6 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "collect:products": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/collect-products.ts",
+    "prebuild": "npm run collect:products",
     "build": "next build",
     "start": "next start",
     "lint": "eslint"

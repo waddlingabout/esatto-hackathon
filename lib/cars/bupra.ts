@@ -5,6 +5,8 @@ export const bupra: Car = {
   name: "Boyota Bupra",
   model: "Bupra",
   eyebrow: "2027 · Sports coupe",
+  summary:
+    "The Boyota Bupra: a light, rear-drive 2-door sports coupe with launch control and a 6-speed manual.",
   tagline: "Low, light and rear-wheel drive. Built for the long way home.",
   colors: [
     { id: "ember-red", name: "Ember Red", hex: "#D9381E" },
@@ -83,4 +85,16 @@ export const bupra: Car = {
     },
   ],
   askAgainPlaceholder: "Something practical, with room for five…",
+  pageSections: [
+    {
+      heading: "Track mode",
+      summary:
+        "One button for the circuit: launch control, sharper throttle, firmer dampers, looser stability control and a lap timer.",
+    },
+    {
+      heading: "Transmission",
+      summary:
+        "6-speed manual with auto rev-matching (0–60 mph 4.1 s est.) or 8-speed automatic with paddles (0–60 mph 3.9 s est.).",
+    },
+  ],
 };

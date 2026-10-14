@@ -6,6 +6,8 @@ export const borolla: Car = {
   name: "Boyota Borolla",
   model: "Borolla",
   eyebrow: "2027 · Compact sedan",
+  summary:
+    "The normal car. A dependable, affordable compact sedan with a 2.0L gas engine and room for five.",
   tagline:
     "The car you forget about — because it just keeps going. A simple 2.0L engine, room for five, and nothing you don't need.",
   colors: [
@@ -53,4 +55,11 @@ export const borolla: Car = {
     { label: "Seats", values: ["Cloth", "Sport cloth", "Heated, synthetic leather"] },
   ],
   askAgainPlaceholder: "Something bigger, with seven seats…",
+  pageSections: [
+    {
+      heading: "What it costs to own",
+      summary:
+        "3 yr / 36,000 mi basic warranty, 5 yr / 60,000 mi powertrain warranty, 10k miles between services (est.), 2 yr roadside assistance. Cheap to buy, cheap to keep.",
+    },
+  ],
 };
