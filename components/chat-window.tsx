@@ -1,13 +1,14 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "react-aria-components/Button";
 import { Form } from "react-aria-components/Form";
 import { Input, TextField } from "react-aria-components/TextField";
 import { Cephalon, type CephalonState } from "@/components/boyota/Cephalon";
 import { Icon } from "@/components/boyota/icons";
-import { focusRing } from "@/components/boyota/styles";
+import { focusRing, linkFocusRing } from "@/components/boyota/styles";
 import { recordPrompt, snapshotClientContext, type InputMode } from "@/lib/visitor-signals";
 
 // The chat never echoes the visitor's prompt; a match navigates straight away,
@@ -36,6 +37,41 @@ const bubble = "max-w-[85%] px-4 py-3.5 text-[17px] leading-normal";
 // Bubble radii from design-system/README.md → Chat bubbles.
 const assistantShape = "self-start rounded-[4px_16px_16px_16px]";
 
+// Every page the chat sent the visitor to, oldest first, so coming back to "/" offers a
+// chip for each. sessionStorage: this tab only. Access can throw (private mode, blocked storage).
+type PastRoute = { url: string; title: string; prompt: string };
+const ROUTES_KEY = "boyota.routes";
+const MAX_ROUTES = 5;
+
+// Read as the raw string so useSyncExternalStore gets a stable snapshot.
+function readRoutes(): string | null {
+  try {
+    return sessionStorage.getItem(ROUTES_KEY);
+  } catch {
+    return null;
+  }
+}
+
+// Nothing to subscribe to: only this window writes it, right before leaving the page.
+const noSubscribe = () => () => {};
+
+function parseRoutes(raw: string | null): PastRoute[] {
+  try {
+    const routes: unknown = raw ? JSON.parse(raw) : [];
+    return Array.isArray(routes) ? (routes as PastRoute[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+// Asking the same thing again moves its chip to the end instead of adding a second one.
+function addRoute(route: PastRoute) {
+  const routes = parseRoutes(readRoutes()).filter((r) => r.url !== route.url);
+  try {
+    sessionStorage.setItem(ROUTES_KEY, JSON.stringify([...routes, route].slice(-MAX_ROUTES)));
+  } catch {}
+}
+
 export function ChatWindow() {
   const router = useRouter();
   const [reply, setReply] = useState<Reply | null>(null);
@@ -59,6 +95,9 @@ export function ChatWindow() {
   const edits = useRef(0);
   // Whether the text in the box came from voice input.
   const fromVoice = useRef(false);
+  // null on the server; read from sessionStorage in the browser.
+  const routesRaw = useSyncExternalStore(noSubscribe, readRoutes, () => null);
+  const pastRoutes = useMemo(() => parseRoutes(routesRaw), [routesRaw]);
 
   // With cacheComponents, Back restores this page from a hidden <Activity>, so
   // clear the in-flight state when it's hidden; otherwise the dots stay up.
@@ -228,7 +267,9 @@ export function ChatWindow() {
         // and the product page shows the prompt as "You asked for …".
         setRouting(true);
         recordPrompt(prompt, mode, data.url);
-        router.push(`${data.url}?q=${encodeURIComponent(prompt)}`);
+        const url = `${data.url}?q=${encodeURIComponent(prompt)}`;
+        addRoute({ url, title: data.title, prompt });
+        router.push(url);
         return;
       } else if (data.action === "none" || data.url === "/") {
         recordPrompt(prompt, mode, null);
@@ -268,6 +309,25 @@ export function ChatWindow() {
 
       <div className="flex min-h-[180px] flex-col gap-3">
         <div className={`${bubble} ${assistantShape} bg-paper`}>{GREETING}</div>
+
+        {pastRoutes.length > 0 && !pending && !routing && (
+          <ul aria-label="Pages you've been sent to" className="m-0 flex list-none flex-col items-start gap-2 p-0">
+            {pastRoutes.map((r) => (
+              <li key={r.url} className="max-w-full">
+                <Link
+                  href={r.url}
+                  className={`${linkFocusRing} flex min-h-11 max-w-full items-center gap-2 rounded-pill bg-lane-tint px-4 py-2 text-[15px] text-lane-deep no-underline hover:text-lane-deep`}
+                >
+                  <Icon name="arrow" size={16} strokeWidth={2.2} className="shrink-0" />
+                  <span className="min-w-0 truncate">
+                    <span className="font-medium">Back to {r.title}</span>
+                    <span className="text-lane-deep/80"> · “{r.prompt}”</span>
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
 
         {reply?.kind === "none" && (
           <div className={`${bubble} ${assistantShape} bg-paper`}>{reply.text}</div>
