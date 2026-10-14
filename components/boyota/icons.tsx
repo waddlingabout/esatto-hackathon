@@ -3,6 +3,13 @@ import type { SVGProps } from "react";
 // 24×24 stroke icons, round caps, currentColor (design-system/README.md → Components).
 const paths = {
   arrow: <path d="M5 12h14M13 6l6 6-6 6" />,
+  mic: (
+    <>
+      <rect x="9" y="3" width="6" height="11" rx="3" />
+      <path d="M5 11a7 7 0 0 0 14 0M12 18v3" />
+    </>
+  ),
+  stop: <rect x="7" y="7" width="10" height="10" rx="2" />,
   bolt: <path d="M13 2 4 14h7l-1 8 9-12h-7z" />,
   shield: (
     <>

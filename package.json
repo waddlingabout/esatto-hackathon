@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "predev": "npm run collect:products",
     "dev": "next dev",
     "collect:products": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/collect-products.ts",
     "prebuild": "npm run collect:products",
