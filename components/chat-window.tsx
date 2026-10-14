@@ -5,59 +5,69 @@ import { useRouter } from "next/navigation";
 import { Button } from "react-aria-components/Button";
 import { Form } from "react-aria-components/Form";
 import { Input, TextField } from "react-aria-components/TextField";
+import { Cephalon, type CephalonState } from "@/components/boyota/Cephalon";
 import { Icon } from "@/components/boyota/icons";
 import { focusRing } from "@/components/boyota/styles";
 
-type Message =
-  | { kind: "assistant"; text: string }
-  | { kind: "user"; text: string }
-  | { kind: "error"; text: string };
-
-type Turn = { role: "user" | "assistant"; content: string };
+// The chat never echoes the visitor's prompt; a match navigates straight away,
+// so the only replies shown are "no match" and errors.
+type Reply = { kind: "none" | "error"; text: string };
 
 type NavigateResponse =
   | { action: "navigate"; url: string; title: string }
-  | { action: "clarify"; url: null; question: string }
   | { action: "none"; url: null; message: string };
 
 const GREETING =
   "Hi! Tell me what kind of car you're after — a model name, a budget, how many seats — and I'll take you straight to it.";
 const ERROR_TEXT = "Navigation is unavailable right now.";
+const NO_MATCH_TEXT = "I couldn't find a matching page. Try rephrasing?";
 const SUGGESTIONS = [
   "A reliable compact sedan",
   "A hybrid for commuting",
   "Something sporty",
 ];
-// Matches the history limit in app/api/navigate/route.ts.
-const MAX_HISTORY = 10;
-
+const STATE_LABELS: Record<CephalonState, string> = {
+  idle: "Ready",
+  thinking: "Thinking…",
+  talking: "Replying",
+  routed: "Taking you there",
+};
+// How long the avatar stays in its "talking" motion after a reply appears.
+const TALK_MS = 1200;
 const bubble = "max-w-[85%] px-4 py-3.5 text-[17px] leading-normal";
 // Bubble radii from design-system/README.md → Chat bubbles.
 const assistantShape = "self-start rounded-[4px_16px_16px_16px]";
 
 export function ChatWindow() {
   const router = useRouter();
-  const [messages, setMessages] = useState<Message[]>([
-    { kind: "assistant", text: GREETING },
-  ]);
+  const [reply, setReply] = useState<Reply | null>(null);
   const [text, setText] = useState("");
   const [pending, setPending] = useState(false);
-  // Turns of the current clarifying exchange, sent so the router keeps context.
-  const history = useRef<Turn[]>([]);
+  const [routing, setRouting] = useState(false);
+  const [talking, setTalking] = useState(false);
+  const [pulse, setPulse] = useState(0);
+  const talkTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // With cacheComponents, Back restores this page from a hidden <Activity>.
-  // When it's hidden (we navigated away), clear the in-flight state and drop the
-  // user's own messages, so only the assistant's replies remain on return.
+  // With cacheComponents, Back restores this page from a hidden <Activity>, so
+  // clear the in-flight state when it's hidden; otherwise the dots stay up.
   useEffect(
     () => () => {
       setPending(false);
-      setMessages((m) => m.filter((message) => message.kind !== "user"));
+      setRouting(false);
+      setTalking(false);
+      clearTimeout(talkTimer.current);
     },
     [],
   );
 
-  const started = messages.length > 1;
+  const avatarState: CephalonState = routing
+    ? "routed"
+    : pending
+      ? "thinking"
+      : talking
+        ? "talking"
+        : "idle";
 
   async function send(prompt: string) {
     prompt = prompt.trim();
@@ -65,45 +75,41 @@ export function ChatWindow() {
 
     setText("");
     setPending(true);
-    setMessages((m) => [...m, { kind: "user", text: prompt }]);
+    setReply(null);
 
-    let reply: Message;
+    let next: Reply;
     try {
       const res = await fetch("/api/navigate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt, history: history.current }),
+        body: JSON.stringify({ prompt }),
       });
       if (!res.ok) throw new Error(`navigate responded ${res.status}`);
       const data: NavigateResponse = await res.json();
 
-      if (data.action === "clarify") {
-        history.current = [
-          ...history.current,
-          { role: "user" as const, content: prompt },
-          { role: "assistant" as const, content: data.question },
-        ].slice(-MAX_HISTORY);
-        reply = { kind: "assistant", text: data.question };
+      // The chat lives on "/", so a route to the home page itself is no help.
+      if (data.action === "navigate" && data.url.startsWith("/") && data.url !== "/") {
+        // Go straight there; the thinking dots stay up until the page changes,
+        // and the product page shows the prompt as "You asked for …".
+        setRouting(true);
+        router.push(`${data.url}?q=${encodeURIComponent(prompt)}`);
+        return;
+      } else if (data.action === "none" || data.url === "/") {
+        next = { kind: "none", text: NO_MATCH_TEXT };
       } else {
-        history.current = [];
-        if (data.action === "navigate" && data.url.startsWith("/")) {
-          // Go straight there; the thinking dots stay up until the page changes,
-          // and the product page shows the prompt as "You asked for …".
-          router.push(`${data.url}?q=${encodeURIComponent(prompt)}`);
-          return;
-        } else if (data.action === "none") {
-          reply = { kind: "assistant", text: data.message };
-        } else {
-          throw new Error("navigate returned an unusable url");
-        }
+        throw new Error("navigate returned an unusable url");
       }
     } catch (err) {
       console.error(err);
-      reply = { kind: "error", text: ERROR_TEXT };
+      next = { kind: "error", text: ERROR_TEXT };
     }
 
-    setMessages((m) => [...m, reply]);
+    setReply(next);
     setPending(false);
+    setTalking(true);
+    setPulse((n) => n + 1);
+    clearTimeout(talkTimer.current);
+    talkTimer.current = setTimeout(() => setTalking(false), TALK_MS);
     inputRef.current?.focus();
   }
 
@@ -112,36 +118,29 @@ export function ChatWindow() {
       aria-label="Boyota assistant"
       className="box-border flex w-full max-w-[720px] flex-col gap-4 rounded-window border border-line bg-surface p-6 shadow-window"
     >
+      <div className="flex items-center gap-3">
+        <Cephalon state={avatarState} pulse={pulse} size={64} />
+        <div className="flex flex-col gap-1.5">
+          <span className="font-display text-lg leading-none font-bold [font-stretch:112%]">
+            Boyota
+          </span>
+          <span className="font-mono text-xs leading-none tracking-[0.08em] text-steel uppercase">
+            {STATE_LABELS[avatarState]}
+          </span>
+        </div>
+      </div>
+
       <div aria-live="polite" className="flex min-h-[180px] flex-col gap-3">
-        {messages.map((message, i) => {
-          switch (message.kind) {
-            case "assistant":
-              return (
-                <div key={i} className={`${bubble} ${assistantShape} bg-paper`}>
-                  {message.text}
-                </div>
-              );
-            case "user":
-              return (
-                <div
-                  key={i}
-                  className={`${bubble} self-end rounded-[16px_4px_16px_16px] bg-ink text-surface`}
-                >
-                  {message.text}
-                </div>
-              );
-            case "error":
-              return (
-                <div
-                  key={i}
-                  role="alert"
-                  className={`${bubble} ${assistantShape} bg-error-tint text-error-deep`}
-                >
-                  {message.text}
-                </div>
-              );
-          }
-        })}
+        <div className={`${bubble} ${assistantShape} bg-paper`}>{GREETING}</div>
+
+        {reply?.kind === "none" && (
+          <div className={`${bubble} ${assistantShape} bg-paper`}>{reply.text}</div>
+        )}
+        {reply?.kind === "error" && (
+          <div role="alert" className={`${bubble} ${assistantShape} bg-error-tint text-error-deep`}>
+            {reply.text}
+          </div>
+        )}
 
         {pending && (
           <div
@@ -156,7 +155,7 @@ export function ChatWindow() {
         )}
       </div>
 
-      {!started && (
+      {!pending && (
         <div className="flex flex-wrap gap-2.5">
           {SUGGESTIONS.map((suggestion) => (
             <Button
