@@ -1,0 +1,55 @@
+/*
+ * Boyota design tokens — Tailwind v4 theme.
+ * Source: "Boyota Design System" canvas on claude.ai (v0.1).
+ *
+ * Use from app/globals.css, after the Tailwind import:
+ *   @import "tailwindcss";
+ *   @import "../design-system/tokens.css";
+ *
+ * Gives utilities like bg-paper, text-ink, bg-ember, border-line,
+ * rounded-card, font-display, font-mono — and the same values as
+ * plain CSS variables (var(--color-ember), …).
+ */
+
+@theme {
+  /* Core palette */
+  --color-ink: #121417;        /* text, chrome, inverted surfaces */
+  --color-paper: #f4f3ef;      /* page ground */
+  --color-surface: #ffffff;    /* chat window, cards */
+  --color-ember: #d9381e;      /* primary action, brand */
+  --color-ember-ink: #b02a14;  /* ember as text / links (AA on paper) */
+  --color-lane: #0f6e6a;       /* routing / success status */
+  --color-steel: #5a5f66;      /* secondary text, labels */
+
+  /* Supporting neutrals */
+  --color-body-muted: #3e4248; /* long-form muted body copy */
+  --color-placeholder: #6b7077;
+  --color-on-ink-muted: #c9ccd1; /* secondary text on ink */
+  --color-line: #dad8d2;       /* borders, dividers */
+  --color-line-subtle: #eceae5; /* table row dividers */
+  --color-line-dashed: #a8a6a0; /* empty / unknown tiles */
+
+  /* Status tints (chat router states) */
+  --color-lane-tint: #e3f0ef;
+  --color-lane-deep: #0b4f4c;  /* text on lane-tint */
+  --color-error-tint: #fbe7e3;
+  --color-error-deep: #8a2412; /* text on error-tint */
+
+  /* Type — loaded via next/font (see README), exposed as these variables */
+  --font-display: var(--font-archivo), "Archivo", system-ui, sans-serif;
+  --font-sans: var(--font-plex-sans), "IBM Plex Sans", system-ui, sans-serif;
+  --font-mono: var(--font-plex-mono), "IBM Plex Mono", ui-monospace, monospace;
+
+  /* Radius: 10 trims · 16 cards/tiles · 20 panels · 28 chat window · pill */
+  --radius-trim: 10px;
+  --radius-card: 16px;
+  --radius-panel: 20px;
+  --radius-window: 28px;
+  --radius-pill: 999px;
+
+  /* Elevation: only the chat window floats */
+  --shadow-window: 0 24px 60px -32px rgb(18 20 23 / 0.35);
+
+  /* Spacing scale 4 / 8 / 16 / 24 / 48 / 80 maps to Tailwind's default
+     4px grid: p-1, p-2, p-4, p-6, p-12, p-20. No override needed. */
+}

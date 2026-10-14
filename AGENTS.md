@@ -7,3 +7,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
 
 <!-- END:nextjs-agent-rules -->
+
+## Design system
+
+All UI follows the Boyota design system in `design-system/`. Read `design-system/README.md` before building or changing any page or component, use the tokens in `design-system/tokens.css` (no ad-hoc hex values), and copy exact layouts from `design-system/reference/`.

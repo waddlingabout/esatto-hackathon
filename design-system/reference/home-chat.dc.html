@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Boyota — Ask</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#B02A14}a:hover{color:#121417}
+input::placeholder{color:#6B7077}
+input:focus{outline:none}
+</style>
+</helmet>
+<main style="min-height: 100vh; box-sizing: border-box; padding: 64px 16px; background: #F4F3EF; color: #121417; font-family: 'IBM Plex Sans', system-ui, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 48px">
+
+  <h1 style="margin: 0; display: flex; align-items: center; gap: 16px">
+    <svg width="60" height="60" viewBox="0 0 40 40" fill="none" aria-hidden="true"><circle cx="20" cy="20" r="17" stroke="#D9381E" stroke-width="3"></circle><path d="M11 32 L19 9 M29 32 L21 9" stroke="#121417" stroke-width="3" stroke-linecap="round"></path><path d="M20 30 v-3 M20 23 v-3" stroke="#D9381E" stroke-width="2" stroke-linecap="round"></path></svg>
+    <span style="font-family: Archivo, sans-serif; font-stretch: 125%; font-weight: 800; font-size: 48px; letter-spacing: 0.04em; line-height: 1">BOYOTA</span>
+  </h1>
+
+  <section aria-label="Boyota assistant" style="width: 100%; max-width: 720px; background: #FFFFFF; border: 1px solid #DAD8D2; border-radius: 28px; box-shadow: 0 24px 60px -32px rgba(18, 20, 23, 0.35); padding: 24px; box-sizing: border-box; display: flex; flex-direction: column; gap: 16px">
+
+    <div style="display: flex; flex-direction: column; gap: 12px; min-height: 180px">
+      <div style="align-self: flex-start; max-width: 85%; background: #F4F3EF; border-radius: 4px 18px 18px 18px; padding: 14px 16px; font-size: 17px; line-height: 1.5">Hi! Tell me what kind of car you're after — a model name, a budget, how many seats — and I'll take you straight to it.</div>
+
+      <sc-if value="{{showUser}}" hint-placeholder-val="{{ false }}">
+        <div style="align-self: flex-end; max-width: 85%; background: #121417; color: #FFFFFF; border-radius: 18px 4px 18px 18px; padding: 14px 16px; font-size: 17px; line-height: 1.5">{{sent}}</div>
+      </sc-if>
+
+      <sc-if value="{{thinking}}" hint-placeholder-val="{{ false }}">
+        <div role="status" aria-label="Finding the right page" style="align-self: flex-start; display: flex; gap: 6px; background: #F4F3EF; border-radius: 4px 18px 18px 18px; padding: 18px 16px">
+          <span style="width: 8px; height: 8px; border-radius: 999px; background: #5A5F66"></span><span style="width: 8px; height: 8px; border-radius: 999px; background: #5A5F66; opacity: 0.6"></span><span style="width: 8px; height: 8px; border-radius: 999px; background: #5A5F66; opacity: 0.3"></span>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{routed}}" hint-placeholder-val="{{ false }}">
+        <div role="status" style="align-self: flex-start; display: flex; flex-wrap: wrap; align-items: center; gap: 12px; background: #E3F0EF; color: #0B4F4C; border-radius: 4px 18px 18px 18px; padding: 12px 12px 12px 16px; font-size: 17px; font-weight: 500">
+          <span>Taking you to Boyota Borolla</span>
+          <a href="product-borolla.dc.html" style="height: 44px; padding: 0 18px; border-radius: 999px; background: #0F6E6A; color: #FFFFFF; display: inline-flex; align-items: center; gap: 8px; text-decoration: none; font-size: 15px; font-weight: 600">Open<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></a>
+        </div>
+      </sc-if>
+    </div>
+
+    <sc-if value="{{idle}}" hint-placeholder-val="{{ true }}">
+      <div style="display: flex; flex-wrap: wrap; gap: 10px">
+        <a href="product-borolla.dc.html" style="min-height: 44px; padding: 0 18px; border: 1px solid #DAD8D2; border-radius: 999px; background: #FFFFFF; color: #121417; display: inline-flex; align-items: center; font-size: 15px; text-decoration: none">Show me the Boyota Borolla</a>
+        <a href="product-borolla.dc.html" style="min-height: 44px; padding: 0 18px; border: 1px solid #DAD8D2; border-radius: 999px; background: #FFFFFF; color: #121417; display: inline-flex; align-items: center; font-size: 15px; text-decoration: none">A reliable compact sedan</a>
+        <a href="product-borolla.dc.html" style="min-height: 44px; padding: 0 18px; border: 1px solid #DAD8D2; border-radius: 999px; background: #FFFFFF; color: #121417; display: inline-flex; align-items: center; font-size: 15px; text-decoration: none">A hybrid for commuting</a>
+      </div>
+    </sc-if>
+
+    <form onSubmit="{{onSubmit}}" style="display: flex; align-items: center; gap: 8px; border: 2px solid #121417; border-radius: 999px; padding: 6px 6px 6px 22px; margin: 0">
+      <label for="ask" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Ask Boyota</label>
+      <input id="ask" type="text" autocomplete="off" placeholder="Ask about any Boyota…" value="{{text}}" onChange="{{onText}}" style="flex-grow: 1; min-width: 0; height: 44px; border: 0; background: transparent; font: 400 17px 'IBM Plex Sans', sans-serif; color: #121417">
+      <button type="submit" aria-label="Send" style="flex-shrink: 0; width: 52px; height: 52px; border: 0; border-radius: 999px; background: #D9381E; color: #FFFFFF; display: flex; align-items: center; justify-content: center; cursor: pointer"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></button>
+    </form>
+
+    <p style="margin: 0; text-align: center; font-size: 13px; color: #5A5F66">The assistant picks a page for you and can get it wrong. It never books or buys anything.</p>
+  </section>
+</main>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { text: '', sent: '', phase: 'idle' };
+  }
+  componentWillUnmount() {
+    clearTimeout(this.timer);
+  }
+  renderVals() {
+    const s = this.state;
+    return {
+      text: s.text,
+      sent: s.sent,
+      idle: s.phase === 'idle',
+      showUser: s.phase !== 'idle',
+      thinking: s.phase === 'thinking',
+      routed: s.phase === 'routed',
+      onText: (e) => this.setState({ text: e.target.value }),
+      onSubmit: (e) => {
+        e.preventDefault();
+        const q = (s.text || '').trim() || 'Show me the Boyota Borolla';
+        clearTimeout(this.timer);
+        this.setState({ sent: q, text: '', phase: 'thinking' });
+        this.timer = setTimeout(() => this.setState({ phase: 'routed' }), 900);
+      },
+    };
+  }
+}
+</script>
+</body>
+</html>
