@@ -9,13 +9,16 @@ import { Input, TextField } from "react-aria-components/TextField";
 import { Cephalon, type CephalonState } from "@/components/boyota/Cephalon";
 import { Icon } from "@/components/boyota/icons";
 import { focusRing, linkFocusRing } from "@/components/boyota/styles";
+import type { FollowUp } from "@/lib/ai-router";
 import { recordPrompt, snapshotClientContext, type InputMode } from "@/lib/visitor-signals";
 
-// The chat never echoes the visitor's prompt; a match navigates straight away,
-// so the only replies shown are "no match" and errors.
+// Before routing, the assistant asks a few follow-up questions (lib/pre-navigation.ts);
+// that conversation is shown as bubbles. A match then navigates straight away, so the
+// only other replies are "no match" and errors.
 type Reply = { kind: "none" | "error"; text: string };
 
 type NavigateResponse =
+  | { action: "ask"; question: string }
   | { action: "navigate"; url: string; title: string }
   | { action: "none"; url: null; message: string };
 
@@ -36,6 +39,7 @@ const VOICE_ERROR_TEXT = "Voice input is unavailable right now.";
 const bubble = "max-w-[85%] px-4 py-3.5 text-[17px] leading-normal";
 // Bubble radii from design-system/README.md → Chat bubbles.
 const assistantShape = "self-start rounded-[4px_16px_16px_16px]";
+const userShape = "self-end rounded-[16px_4px_16px_16px] bg-ink text-surface";
 
 // Every page the chat sent the visitor to, oldest first, so coming back to "/" offers a
 // chip for each. sessionStorage: this tab only. Access can throw (private mode, blocked storage).
@@ -80,6 +84,11 @@ export function ChatWindow() {
   const [routing, setRouting] = useState(false);
   const [talking, setTalking] = useState(false);
   const [pulse, setPulse] = useState(0);
+  // The conversation before routing: the first statement, the answered follow-ups,
+  // and the question waiting for an answer. The whole transcript is sent each turn.
+  const [statement, setStatement] = useState<string | null>(null);
+  const [followUps, setFollowUps] = useState<FollowUp[]>([]);
+  const [question, setQuestion] = useState<string | null>(null);
   const talkTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const inputRef = useRef<HTMLInputElement>(null);
   // Voice input: record with the mic button and transcribe into the input box, where the
@@ -140,10 +149,14 @@ export function ChatWindow() {
             ? reply.text
             : heard
               ? `Heard: ${heard}. Edit it or press Enter to send.`
-              : "";
+              : question ?? "";
 
   function say(next: Reply) {
     setReply(next);
+    talk();
+  }
+
+  function talk() {
     setTalking(true);
     setPulse((n) => n + 1);
     clearTimeout(talkTimer.current);
@@ -234,9 +247,27 @@ export function ChatWindow() {
     setText(next);
   }
 
-  async function send(prompt: string, mode: InputMode) {
-    prompt = prompt.trim();
-    if (!prompt || pending) return;
+  function resetConversation() {
+    setStatement(null);
+    setFollowUps([]);
+    setQuestion(null);
+  }
+
+  function startOver() {
+    resetConversation();
+    setReply(null);
+    inputRef.current?.focus();
+  }
+
+  async function send(input: string, mode: InputMode) {
+    input = input.trim();
+    if (!input || pending) return;
+
+    // The first message is the statement; every later one answers the open question.
+    const prompt = statement ?? input;
+    const answered = statement !== null && question !== null
+      ? [...followUps, { question, answer: input }]
+      : followUps;
 
     const typingMs = mode === "typed" && typingStartedAt.current !== null
       ? Date.now() - typingStartedAt.current
@@ -250,16 +281,26 @@ export function ChatWindow() {
     setHeard("");
     setPending(true);
     setReply(null);
+    setStatement(prompt);
+    setFollowUps(answered);
+    setQuestion(null);
 
     let next: Reply;
     try {
       const res = await fetch("/api/navigate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt, ctx }),
+        body: JSON.stringify({ prompt, followUps: answered, ctx }),
       });
       if (!res.ok) throw new Error(`navigate responded ${res.status}`);
       const data: NavigateResponse = await res.json();
+
+      if (data.action === "ask") {
+        setQuestion(data.question);
+        setPending(false);
+        talk();
+        return;
+      }
 
       // The chat lives on "/", so a route to the home page itself is no help.
       if (data.action === "navigate" && data.url.startsWith("/") && data.url !== "/") {
@@ -269,6 +310,7 @@ export function ChatWindow() {
         recordPrompt(prompt, mode, data.url);
         const url = `${data.url}?q=${encodeURIComponent(prompt)}`;
         addRoute({ url, title: data.title, prompt });
+        resetConversation();
         router.push(url);
         return;
       } else if (data.action === "none" || data.url === "/") {
@@ -282,9 +324,13 @@ export function ChatWindow() {
       next = { kind: "error", text: ERROR_TEXT };
     }
 
+    // No match or an error ends the conversation; the next message is a new statement.
+    resetConversation();
     setPending(false);
     say(next);
   }
+
+  const inConversation = statement !== null;
 
   return (
     <section
@@ -310,7 +356,7 @@ export function ChatWindow() {
       <div className="flex min-h-[180px] flex-col gap-3">
         <div className={`${bubble} ${assistantShape} bg-paper`}>{GREETING}</div>
 
-        {pastRoutes.length > 0 && !pending && !routing && (
+        {pastRoutes.length > 0 && !inConversation && !pending && !routing && (
           <ul aria-label="Pages you've been sent to" className="m-0 flex list-none flex-col items-start gap-2 p-0">
             {pastRoutes.map((r) => (
               <li key={r.url} className="max-w-full">
@@ -327,6 +373,19 @@ export function ChatWindow() {
               </li>
             ))}
           </ul>
+        )}
+
+        {statement !== null && (
+          <div className={`${bubble} ${userShape}`}>{statement}</div>
+        )}
+        {followUps.map((f, i) => (
+          <div key={i} className="contents">
+            <div className={`${bubble} ${assistantShape} bg-paper`}>{f.question}</div>
+            <div className={`${bubble} ${userShape}`}>{f.answer}</div>
+          </div>
+        ))}
+        {question !== null && (
+          <div className={`${bubble} ${assistantShape} bg-paper`}>{question}</div>
         )}
 
         {reply?.kind === "none" && (
@@ -363,7 +422,13 @@ export function ChatWindow() {
         >
           <Input
             ref={inputRef}
-            placeholder={voice === "recording" ? "Listening…" : "Hi, I'm looking for a car that can…"}
+            placeholder={
+              voice === "recording"
+                ? "Listening…"
+                : question !== null
+                  ? "Your answer…"
+                  : "Hi, I'm looking for a car that can…"
+            }
             className="h-11 w-full border-0 bg-transparent font-sans text-[17px] text-ink outline-none"
           />
         </TextField>
@@ -388,6 +453,16 @@ export function ChatWindow() {
           <Icon name="arrow" size={22} strokeWidth={2.4} />
         </Button>
       </Form>
+
+      {inConversation && !routing && (
+        <Button
+          onPress={startOver}
+          isDisabled={busy}
+          className={`${focusRing} min-h-11 cursor-pointer self-center rounded-pill bg-transparent px-4 text-[15px] text-steel data-[disabled]:cursor-default data-[disabled]:opacity-60 data-[hovered]:text-ink`}
+        >
+          Start over
+        </Button>
+      )}
     </section>
   );
 }

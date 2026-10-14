@@ -1,9 +1,21 @@
 import { z } from "zod";
 import { resolveDestination } from "@/lib/ai-router";
+import { MAX_FOLLOW_UPS, nextFollowUp } from "@/lib/pre-navigation";
 import { buildVisitorContext, clientContextSchema, formatVisitorContext } from "@/lib/visitor-context";
 
 const bodySchema = z.object({
   prompt: z.string().trim().min(1).max(500),
+  // Follow-up questions already asked and answered, oldest first. The client keeps
+  // the conversation; each request either asks the next question or routes.
+  followUps: z
+    .array(
+      z.object({
+        question: z.string().trim().min(1).max(300),
+        answer: z.string().trim().min(1).max(500),
+      }),
+    )
+    .max(MAX_FOLLOW_UPS)
+    .default([]),
   // Optional visitor signals; malformed context is dropped, never a 400.
   ctx: z.unknown().optional(),
 });
@@ -12,7 +24,7 @@ export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
   const parsed = bodySchema.safeParse(body);
   if (!parsed.success) {
-    return Response.json({ error: "Expected { prompt: string (1–500 chars) }." }, { status: 400 });
+    return Response.json({ error: `Expected { prompt: string (1–500 chars), followUps?: { question, answer }[] (at most ${MAX_FOLLOW_UPS}) }.` }, { status: 400 });
   }
 
   const client = clientContextSchema.safeParse(parsed.data.ctx);
@@ -21,8 +33,20 @@ export async function POST(request: Request) {
     console.info("[navigate] context\n" + formatVisitorContext(context));
   }
 
+  const { prompt, followUps } = parsed.data;
+
+  // A failing follow-up never blocks navigation: route with what we have.
   try {
-    const result = await resolveDestination(parsed.data.prompt, context);
+    const step = await nextFollowUp(prompt, followUps, context);
+    if (step.kind === "ask") {
+      return Response.json({ action: "ask", question: step.question });
+    }
+  } catch (err) {
+    console.error("[navigate] follow-up failed, routing directly", err);
+  }
+
+  try {
+    const result = await resolveDestination(prompt, context, followUps);
     switch (result.kind) {
       case "navigate":
         return Response.json({
