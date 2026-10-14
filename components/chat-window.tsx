@@ -8,6 +8,7 @@ import { Input, TextField } from "react-aria-components/TextField";
 import { Cephalon, type CephalonState } from "@/components/boyota/Cephalon";
 import { Icon } from "@/components/boyota/icons";
 import { focusRing } from "@/components/boyota/styles";
+import { recordPrompt, snapshotClientContext, type InputMode } from "@/lib/visitor-signals";
 
 // The chat never echoes the visitor's prompt; a match navigates straight away,
 // so the only replies shown are "no match" and errors.
@@ -45,11 +46,19 @@ export function ChatWindow() {
   const [pulse, setPulse] = useState(0);
   const talkTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const inputRef = useRef<HTMLInputElement>(null);
-  // Voice input: record with the mic button, transcribe, then send like a typed prompt.
+  // Voice input: record with the mic button and transcribe into the input box, where the
+  // visitor can edit it and send it like a typed prompt. Talking again replaces the box.
   const [voice, setVoice] = useState<"idle" | "recording" | "transcribing">("idle");
+  // The last transcript put in the box, read out once so screen-reader users know it's there.
+  const [heard, setHeard] = useState("");
   const recorder = useRef<MediaRecorder | null>(null);
   const discardRecording = useRef(false);
   const recordTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  // How the current prompt was typed, sent along as visitor context.
+  const typingStartedAt = useRef<number | null>(null);
+  const edits = useRef(0);
+  // Whether the text in the box came from voice input.
+  const fromVoice = useRef(false);
 
   // With cacheComponents, Back restores this page from a hidden <Activity>, so
   // clear the in-flight state when it's hidden; otherwise the dots stay up.
@@ -90,7 +99,9 @@ export function ChatWindow() {
           ? "Working out what you said…"
           : reply?.kind === "none"
             ? reply.text
-            : "";
+            : heard
+              ? `Heard: ${heard}. Edit it or press Enter to send.`
+              : "";
 
   function say(next: Reply) {
     setReply(next);
@@ -127,7 +138,7 @@ export function ChatWindow() {
         discardRecording.current = false;
         return;
       }
-      void transcribeAndSend(new Blob(chunks, { type: rec.mimeType || "audio/webm" }));
+      void transcribe(new Blob(chunks, { type: rec.mimeType || "audio/webm" }));
     };
 
     recorder.current = rec;
@@ -135,6 +146,7 @@ export function ChatWindow() {
     rec.start();
     setVoice("recording");
     setReply(null);
+    setHeard("");
     recordTimer.current = setTimeout(() => rec.stop(), MAX_RECORDING_MS);
   }
 
@@ -142,7 +154,7 @@ export function ChatWindow() {
     if (recorder.current?.state === "recording") recorder.current.stop();
   }
 
-  async function transcribeAndSend(audio: Blob) {
+  async function transcribe(audio: Blob) {
     setVoice("transcribing");
     let prompt: string;
     try {
@@ -162,14 +174,41 @@ export function ChatWindow() {
       say({ kind: "none", text: "I didn't catch that. Try again?" });
       return;
     }
-    await send(prompt);
+    // Replace whatever is in the box, then hand it back for editing with the caret at the end.
+    setText(prompt);
+    setHeard(prompt);
+    fromVoice.current = true;
+    edits.current = 0;
+    typingStartedAt.current = null;
+    requestAnimationFrame(() => {
+      const input = inputRef.current;
+      input?.focus();
+      input?.setSelectionRange(prompt.length, prompt.length);
+    });
   }
 
-  async function send(prompt: string) {
+  function onTextChange(next: string) {
+    typingStartedAt.current ??= Date.now();
+    if (next.length < text.length) edits.current++;
+    // Clearing the box drops the voice origin; edits to a transcript keep it.
+    if (!next) fromVoice.current = false;
+    setText(next);
+  }
+
+  async function send(prompt: string, mode: InputMode) {
     prompt = prompt.trim();
     if (!prompt || pending) return;
 
+    const typingMs = mode === "typed" && typingStartedAt.current !== null
+      ? Date.now() - typingStartedAt.current
+      : null;
+    const ctx = snapshotClientContext({ mode, typingMs, edits: edits.current });
+    typingStartedAt.current = null;
+    edits.current = 0;
+    fromVoice.current = false;
+
     setText("");
+    setHeard("");
     setPending(true);
     setReply(null);
 
@@ -178,7 +217,7 @@ export function ChatWindow() {
       const res = await fetch("/api/navigate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt }),
+        body: JSON.stringify({ prompt, ctx }),
       });
       if (!res.ok) throw new Error(`navigate responded ${res.status}`);
       const data: NavigateResponse = await res.json();
@@ -188,9 +227,11 @@ export function ChatWindow() {
         // Go straight there; the thinking dots stay up until the page changes,
         // and the product page shows the prompt as "You asked for …".
         setRouting(true);
+        recordPrompt(prompt, mode, data.url);
         router.push(`${data.url}?q=${encodeURIComponent(prompt)}`);
         return;
       } else if (data.action === "none" || data.url === "/") {
+        recordPrompt(prompt, mode, null);
         next = { kind: "none", text: NO_MATCH_TEXT };
       } else {
         throw new Error("navigate returned an unusable url");
@@ -249,14 +290,14 @@ export function ChatWindow() {
       <Form
         onSubmit={(e) => {
           e.preventDefault();
-          if (!busy) send(text);
+          if (!busy) send(text, fromVoice.current ? "voice" : "typed");
         }}
         className="m-0 flex items-center gap-2 rounded-pill border-2 border-ink py-1.5 pr-1.5 pl-[22px] has-[input:focus-visible]:outline-2 has-[input:focus-visible]:outline-offset-2 has-[input:focus-visible]:outline-ink"
       >
         <TextField
           aria-label="Ask Boyota"
           value={text}
-          onChange={setText}
+          onChange={onTextChange}
           autoComplete="off"
           className="min-w-0 grow"
         >

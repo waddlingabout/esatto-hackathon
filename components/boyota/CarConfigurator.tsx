@@ -3,6 +3,7 @@
 import { useId, useState, type CSSProperties, type ReactNode } from "react";
 import { Radio, RadioGroup } from "react-aria-components/RadioGroup";
 import type { Car } from "@/lib/cars/types";
+import { recordEvent } from "@/lib/visitor-signals";
 import { focusRing, linkFocusRing } from "./styles";
 
 type Props = {
@@ -86,7 +87,10 @@ export function CarConfigurator({ car, silhouette, chip }: Props) {
                 <RadioGroup
                   aria-labelledby={colorLabelId}
                   value={color.id}
-                  onChange={setColorId}
+                  onChange={(id) => {
+                    setColorId(id);
+                    recordEvent(`${car.name} color:${id}`);
+                  }}
                   orientation="horizontal"
                   className="flex gap-2"
                 >
@@ -115,7 +119,10 @@ export function CarConfigurator({ car, silhouette, chip }: Props) {
               <RadioGroup
                 aria-labelledby={trimLabelId}
                 value={trim.id}
-                onChange={setTrimId}
+                onChange={(id) => {
+                  setTrimId(id);
+                  recordEvent(`${car.name} trim:${id}`);
+                }}
                 orientation="horizontal"
                 className="grid grid-cols-[repeat(auto-fit,minmax(120px,1fr))] gap-2"
               >
