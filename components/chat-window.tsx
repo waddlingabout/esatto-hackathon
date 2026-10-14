@@ -334,14 +334,14 @@ export function ChatWindow() {
 
   return (
     <section
-      aria-label="Boyota assistant"
+      aria-label="Carp, the Boyota assistant"
       className="box-border flex w-full max-w-[720px] flex-col gap-4 rounded-window border border-line bg-surface p-6 shadow-window"
     >
       <div className="flex items-center gap-3">
         <Cephalon state={avatarState} pulse={pulse} size={64} />
         <div className="flex flex-col gap-1.5">
           <span className="font-display text-lg leading-none font-bold [font-stretch:112%]">
-            Boyota
+            Carp
           </span>
           <span className="font-mono text-xs leading-none tracking-[0.08em] text-steel uppercase">
             {stateLabel}
@@ -414,7 +414,7 @@ export function ChatWindow() {
         className="m-0 flex items-center gap-2 rounded-pill border-2 border-ink py-1.5 pr-1.5 pl-[22px] has-[input:focus-visible]:outline-2 has-[input:focus-visible]:outline-offset-2 has-[input:focus-visible]:outline-ink"
       >
         <TextField
-          aria-label="Ask Boyota"
+          aria-label="Ask Carp"
           value={text}
           onChange={onTextChange}
           autoComplete="off"
