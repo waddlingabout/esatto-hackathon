@@ -9,8 +9,10 @@ import { Input, TextField } from "react-aria-components/TextField";
 import { Cephalon, type CephalonState } from "@/components/boyota/Cephalon";
 import { Icon } from "@/components/boyota/icons";
 import { focusRing, linkFocusRing } from "@/components/boyota/styles";
+import { useVoiceInput } from "@/components/use-voice-input";
 import type { FollowUp } from "@/lib/ai-router";
-import { recordPrompt, snapshotClientContext, type InputMode } from "@/lib/visitor-signals";
+import { addRoute, parseRoutes, readRoutes, writeHistory } from "@/lib/route-history";
+import { recordPrompt, snapshotClientContext } from "@/lib/visitor-signals";
 
 // Before routing, the assistant asks a few follow-up questions (lib/pre-navigation.ts);
 // that conversation is shown as bubbles. A match then navigates straight away, so the
@@ -33,53 +35,17 @@ const STATE_LABELS: Record<CephalonState, string> = {
 };
 // How long the avatar stays in its "talking" motion after a reply appears.
 const TALK_MS = 1200;
-// Voice input stops recording on its own after this long.
-const MAX_RECORDING_MS = 30_000;
-const VOICE_ERROR_TEXT = "Voice input is unavailable right now.";
 const bubble = "max-w-[85%] px-4 py-3.5 text-[17px] leading-normal";
 // Bubble radii from design-system/README.md → Chat bubbles.
 const assistantShape = "self-start rounded-[4px_16px_16px_16px]";
 const userShape = "self-end rounded-[16px_4px_16px_16px] bg-ink text-surface";
 
-// Every page the chat sent the visitor to, oldest first, so coming back to "/" offers a
-// chip for each. sessionStorage: this tab only. Access can throw (private mode, blocked storage).
-type PastRoute = { url: string; title: string; prompt: string };
-const ROUTES_KEY = "boyota.routes";
-const MAX_ROUTES = 5;
-
-// Read as the raw string so useSyncExternalStore gets a stable snapshot.
-function readRoutes(): string | null {
-  try {
-    return sessionStorage.getItem(ROUTES_KEY);
-  } catch {
-    return null;
-  }
-}
-
 // Nothing to subscribe to: only this window writes it, right before leaving the page.
 const noSubscribe = () => () => {};
-
-function parseRoutes(raw: string | null): PastRoute[] {
-  try {
-    const routes: unknown = raw ? JSON.parse(raw) : [];
-    return Array.isArray(routes) ? (routes as PastRoute[]) : [];
-  } catch {
-    return [];
-  }
-}
-
-// Asking the same thing again moves its chip to the end instead of adding a second one.
-function addRoute(route: PastRoute) {
-  const routes = parseRoutes(readRoutes()).filter((r) => r.url !== route.url);
-  try {
-    sessionStorage.setItem(ROUTES_KEY, JSON.stringify([...routes, route].slice(-MAX_ROUTES)));
-  } catch {}
-}
 
 export function ChatWindow() {
   const router = useRouter();
   const [reply, setReply] = useState<Reply | null>(null);
-  const [text, setText] = useState("");
   const [pending, setPending] = useState(false);
   const [routing, setRouting] = useState(false);
   const [talking, setTalking] = useState(false);
@@ -91,19 +57,11 @@ export function ChatWindow() {
   const [question, setQuestion] = useState<string | null>(null);
   const talkTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const inputRef = useRef<HTMLInputElement>(null);
-  // Voice input: record with the mic button and transcribe into the input box, where the
-  // visitor can edit it and send it like a typed prompt. Talking again replaces the box.
-  const [voice, setVoice] = useState<"idle" | "recording" | "transcribing">("idle");
-  // The last transcript put in the box, read out once so screen-reader users know it's there.
-  const [heard, setHeard] = useState("");
-  const recorder = useRef<MediaRecorder | null>(null);
-  const discardRecording = useRef(false);
-  const recordTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
-  // How the current prompt was typed, sent along as visitor context.
-  const typingStartedAt = useRef<number | null>(null);
-  const edits = useRef(0);
-  // Whether the text in the box came from voice input.
-  const fromVoice = useRef(false);
+  const { text, voice, heard, onTextChange, startRecording, stopRecording, take } = useVoiceInput({
+    inputRef,
+    onMessage: say,
+    onRecordingStart: () => setReply(null),
+  });
   // null on the server; read from sessionStorage in the browser.
   const routesRaw = useSyncExternalStore(noSubscribe, readRoutes, () => null);
   const pastRoutes = useMemo(() => parseRoutes(routesRaw), [routesRaw]);
@@ -116,13 +74,6 @@ export function ChatWindow() {
       setRouting(false);
       setTalking(false);
       clearTimeout(talkTimer.current);
-      // Leaving mid-recording: release the mic and drop the audio.
-      setVoice("idle");
-      clearTimeout(recordTimer.current);
-      if (recorder.current?.state === "recording") {
-        discardRecording.current = true;
-        recorder.current.stop();
-      }
     },
     [],
   );
@@ -164,89 +115,6 @@ export function ChatWindow() {
     inputRef.current?.focus();
   }
 
-  async function startRecording() {
-    if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined") {
-      say({ kind: "error", text: "Voice input isn't supported in this browser." });
-      return;
-    }
-    let stream: MediaStream;
-    try {
-      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    } catch {
-      say({ kind: "error", text: "I can't hear you. Allow microphone access and try again." });
-      return;
-    }
-
-    const rec = new MediaRecorder(stream);
-    const chunks: Blob[] = [];
-    rec.ondataavailable = (e) => {
-      if (e.data.size > 0) chunks.push(e.data);
-    };
-    rec.onstop = () => {
-      stream.getTracks().forEach((t) => t.stop());
-      clearTimeout(recordTimer.current);
-      recorder.current = null;
-      if (discardRecording.current) {
-        discardRecording.current = false;
-        return;
-      }
-      void transcribe(new Blob(chunks, { type: rec.mimeType || "audio/webm" }));
-    };
-
-    recorder.current = rec;
-    discardRecording.current = false;
-    rec.start();
-    setVoice("recording");
-    setReply(null);
-    setHeard("");
-    recordTimer.current = setTimeout(() => rec.stop(), MAX_RECORDING_MS);
-  }
-
-  function stopRecording() {
-    if (recorder.current?.state === "recording") recorder.current.stop();
-  }
-
-  async function transcribe(audio: Blob) {
-    setVoice("transcribing");
-    let prompt: string;
-    try {
-      const form = new FormData();
-      form.append("audio", audio, "speech");
-      const res = await fetch("/api/transcribe", { method: "POST", body: form });
-      if (!res.ok) throw new Error(`transcribe responded ${res.status}`);
-      prompt = ((await res.json()) as { text: string }).text;
-    } catch (err) {
-      console.error(err);
-      setVoice("idle");
-      say({ kind: "error", text: VOICE_ERROR_TEXT });
-      return;
-    }
-    setVoice("idle");
-    if (!prompt) {
-      say({ kind: "none", text: "I didn't catch that. Try again?" });
-      return;
-    }
-    // Replace whatever is in the box, then hand it back for editing with the caret at the end.
-    setText(prompt);
-    setHeard(prompt);
-    fromVoice.current = true;
-    edits.current = 0;
-    typingStartedAt.current = null;
-    requestAnimationFrame(() => {
-      const input = inputRef.current;
-      input?.focus();
-      input?.setSelectionRange(prompt.length, prompt.length);
-    });
-  }
-
-  function onTextChange(next: string) {
-    typingStartedAt.current ??= Date.now();
-    if (next.length < text.length) edits.current++;
-    // Clearing the box drops the voice origin; edits to a transcript keep it.
-    if (!next) fromVoice.current = false;
-    setText(next);
-  }
-
   function resetConversation() {
     setStatement(null);
     setFollowUps([]);
@@ -259,9 +127,11 @@ export function ChatWindow() {
     inputRef.current?.focus();
   }
 
-  async function send(input: string, mode: InputMode) {
-    input = input.trim();
-    if (!input || pending) return;
+  async function send() {
+    if (pending) return;
+    const taken = take();
+    if (!taken) return;
+    const { text: input, mode } = taken;
 
     // The first message is the statement; every later one answers the open question.
     const prompt = statement ?? input;
@@ -269,16 +139,8 @@ export function ChatWindow() {
       ? [...followUps, { question, answer: input }]
       : followUps;
 
-    const typingMs = mode === "typed" && typingStartedAt.current !== null
-      ? Date.now() - typingStartedAt.current
-      : null;
-    const ctx = snapshotClientContext({ mode, typingMs, edits: edits.current });
-    typingStartedAt.current = null;
-    edits.current = 0;
-    fromVoice.current = false;
+    const ctx = snapshotClientContext({ mode, typingMs: taken.typingMs, edits: taken.edits });
 
-    setText("");
-    setHeard("");
     setPending(true);
     setReply(null);
     setStatement(prompt);
@@ -310,6 +172,7 @@ export function ChatWindow() {
         recordPrompt(prompt, mode, data.url);
         const url = `${data.url}?q=${encodeURIComponent(prompt)}`;
         addRoute({ url, title: data.title, prompt });
+        writeHistory([{ statement: prompt, followUps: answered, path: data.url }]);
         resetConversation();
         router.push(url);
         return;
@@ -409,7 +272,7 @@ export function ChatWindow() {
       <Form
         onSubmit={(e) => {
           e.preventDefault();
-          if (!busy) send(text, fromVoice.current ? "voice" : "typed");
+          if (!busy) send();
         }}
         className="m-0 flex items-center gap-2 rounded-pill border-2 border-ink py-1.5 pr-1.5 pl-[22px] has-[input:focus-visible]:outline-2 has-[input:focus-visible]:outline-offset-2 has-[input:focus-visible]:outline-ink"
       >

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AskAgain } from "./AskAgain";
 import { Icon } from "./icons";
 import { linkFocusRing } from "./styles";
 
@@ -38,15 +39,7 @@ export function SiteHeader() {
             BOYOTA
           </span>
         </Link>
-        <Link
-          href="/"
-          className={`${linkFocusRing} flex min-h-12 flex-[0_1_420px] items-center gap-2.5 rounded-pill border border-line bg-surface py-0 pr-1.5 pl-[18px] text-[15px] text-steel no-underline hover:text-steel`}
-        >
-          <span className="grow">Ask Boyota something else…</span>
-          <span className="flex size-9 items-center justify-center rounded-pill bg-ink text-white">
-            <Icon name="arrow" size={16} strokeWidth={2.4} />
-          </span>
-        </Link>
+        <AskAgain variant="header" label="Ask Boyota something else" placeholder="Ask Boyota something else…" />
       </div>
     </header>
   );

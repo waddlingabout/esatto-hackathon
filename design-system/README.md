@@ -98,7 +98,7 @@ All targets are at least 44px tall. Icons are inline stroke SVGs: 24×24 viewBox
 - **Motion:** with `prefers-reduced-motion: reduce`, the avatar shows a still shape per state instead of animating.
 - **High contrast:** swatches keep their paint with `forced-color-adjust: none`; selected swatches and trims use the `Highlight` system color in forced-colors mode.
 - **Labels:** the color and trim groups are labelled by their visible "Color" and "Trim" captions. Spec tiles are a `<dl>`: label first in the markup, number shown on top. `[—]` gets "Not available" for screen readers.
-- **Links say where they go:** a link styled as an input (header, "Not quite the one?") still reads as asking the assistant. Product pages start with a "Skip to content" link.
+- **Ask again from product pages:** the header field and "Not quite the one?" are real inputs (typed or spoken, with mic and send buttons) that reroute from the current page; each has its own visually hidden status line and a `role="alert"` for errors. Product pages start with a "Skip to content" link.
 
 ### Chat bubbles and router states
 

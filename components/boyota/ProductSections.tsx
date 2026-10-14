@@ -1,5 +1,5 @@
-import Link from "next/link";
 import type { Car } from "@/lib/cars/types";
+import { AskAgain } from "./AskAgain";
 import { Icon } from "./icons";
 import { linkFocusRing } from "./styles";
 
@@ -84,18 +84,7 @@ export function AskAgainCTA({ placeholder }: { placeholder: string }) {
         <p className="m-0 text-[17px] text-body-muted">
           Tell the assistant what&apos;s missing and it&apos;ll take you somewhere better.
         </p>
-        <Link
-          href="/"
-          className={`${linkFocusRing} flex min-h-14 w-full max-w-[560px] items-center gap-2.5 rounded-pill border-2 border-ink py-0 pr-1.5 pl-5 text-left text-base text-steel no-underline hover:text-steel`}
-        >
-          <span className="grow">
-            <span className="sr-only">Ask the assistant: </span>
-            {placeholder}
-          </span>
-          <span className="flex size-11 items-center justify-center rounded-pill bg-ember text-white">
-            <Icon name="arrow" size={20} strokeWidth={2.4} />
-          </span>
-        </Link>
+        <AskAgain variant="footer" label="Tell the assistant what's missing" placeholder={placeholder} />
       </div>
     </section>
   );
