@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Car } from "@/lib/cars/types";
 import { Icon } from "./icons";
+import { linkFocusRing } from "./styles";
 
 export function FeatureGrid({ car }: { car: Car }) {
   return (
@@ -27,8 +28,16 @@ export function FeatureGrid({ car }: { car: Car }) {
 export function TrimTable({ car }: { car: Car }) {
   return (
     <section id="build" className="mx-auto flex max-w-[1280px] flex-col gap-6 px-6 py-20">
-      <h2 className="m-0 font-display text-[32px] font-bold [font-stretch:112%]">Compare trims</h2>
-      <div className="overflow-x-auto rounded-panel border border-line bg-surface">
+      <h2 id="compare-trims" className="m-0 font-display text-[32px] font-bold [font-stretch:112%]">
+        Compare trims
+      </h2>
+      {/* Scrolls sideways on narrow screens, so it takes focus for arrow-key scrolling. */}
+      <div
+        role="region"
+        aria-labelledby="compare-trims"
+        tabIndex={0}
+        className={`${linkFocusRing} overflow-x-auto rounded-panel border border-line bg-surface`}
+      >
         <table className="w-full min-w-[640px] border-collapse text-base">
           <thead>
             <tr className="border-b border-line text-left">
@@ -77,9 +86,12 @@ export function AskAgainCTA({ placeholder }: { placeholder: string }) {
         </p>
         <Link
           href="/"
-          className="flex min-h-14 w-full max-w-[560px] items-center gap-2.5 rounded-pill border-2 border-ink py-0 pr-1.5 pl-5 text-left text-base text-steel no-underline hover:text-steel"
+          className={`${linkFocusRing} flex min-h-14 w-full max-w-[560px] items-center gap-2.5 rounded-pill border-2 border-ink py-0 pr-1.5 pl-5 text-left text-base text-steel no-underline hover:text-steel`}
         >
-          <span className="grow">{placeholder}</span>
+          <span className="grow">
+            <span className="sr-only">Ask the assistant: </span>
+            {placeholder}
+          </span>
           <span className="flex size-11 items-center justify-center rounded-pill bg-ember text-white">
             <Icon name="arrow" size={20} strokeWidth={2.4} />
           </span>

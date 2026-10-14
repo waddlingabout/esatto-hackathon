@@ -91,6 +91,15 @@ All targets are at least 44px tall. Icons are inline stroke SVGs: 24×24 viewBox
 - **Spec tile:** `surface`, `rounded-card`, padding 24, a big Plex Mono number with a 14px `steel` label. The inverted version on `ink` is for the headline spec. Empty or unknown values get a dashed `line-dashed` border and show `[—]`.
 - **Chat window:** `surface`, `rounded-window`, `shadow-window`, padding 24, gap 16. The input is a pill with a 2px `ink` border and the send button inside it. Below it, a 13px `steel` disclaimer: *"The assistant picks a page for you and can get it wrong. It never books or buys anything."*
 
+### Accessibility
+
+- **Focus:** every interactive element shows a 2px `ink` outline, offset 2px, on keyboard focus (`focusRing` / `linkFocusRing` in `components/boyota/styles.ts`). The chat input hides its own outline, so the pill around it takes the ring instead.
+- **Announcements:** router states are read out from one visually hidden `role="status"` line; errors use `role="alert"`. Don't nest live regions, and don't rely on `aria-label` on a live region (only its text is read).
+- **Motion:** with `prefers-reduced-motion: reduce`, the avatar shows a still shape per state instead of animating.
+- **High contrast:** swatches keep their paint with `forced-color-adjust: none`; selected swatches and trims use the `Highlight` system color in forced-colors mode.
+- **Labels:** the color and trim groups are labelled by their visible "Color" and "Trim" captions. Spec tiles are a `<dl>`: label first in the markup, number shown on top. `[—]` gets "Not available" for screen readers.
+- **Links say where they go:** a link styled as an input (header, "Not quite the one?") still reads as asking the assistant. Product pages start with a "Skip to content" link.
+
 ### Chat bubbles and router states
 
 These match the `POST /api/navigate` responses:

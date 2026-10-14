@@ -79,6 +79,18 @@ export function ChatWindow() {
         : "idle";
   const stateLabel = voice === "recording" ? "Listening…" : STATE_LABELS[avatarState];
   const busy = pending || voice !== "idle";
+  // Read out by the visually hidden status line; errors use role="alert" instead.
+  const announcement = routing
+    ? "Taking you there…"
+    : pending
+      ? "Finding the right page…"
+      : voice === "recording"
+        ? "Listening…"
+        : voice === "transcribing"
+          ? "Working out what you said…"
+          : reply?.kind === "none"
+            ? reply.text
+            : "";
 
   function say(next: Reply) {
     setReply(next);
@@ -209,7 +221,11 @@ export function ChatWindow() {
         </div>
       </div>
 
-      <div aria-live="polite" className="flex min-h-[180px] flex-col gap-3">
+      <p role="status" className="sr-only">
+        {announcement}
+      </p>
+
+      <div className="flex min-h-[180px] flex-col gap-3">
         <div className={`${bubble} ${assistantShape} bg-paper`}>{GREETING}</div>
 
         {reply?.kind === "none" && (
@@ -222,11 +238,7 @@ export function ChatWindow() {
         )}
 
         {(pending || voice === "transcribing") && (
-          <div
-            role="status"
-            aria-label={pending ? "Finding the right page" : "Listening to your question"}
-            className={`${assistantShape} flex gap-1.5 bg-paper px-4 py-[18px]`}
-          >
+          <div aria-hidden="true" className={`${assistantShape} flex gap-1.5 bg-paper px-4 py-[18px]`}>
             <span className="size-2 rounded-pill bg-steel" />
             <span className="size-2 rounded-pill bg-steel opacity-60" />
             <span className="size-2 rounded-pill bg-steel opacity-30" />
@@ -239,7 +251,7 @@ export function ChatWindow() {
           e.preventDefault();
           if (!busy) send(text);
         }}
-        className="m-0 flex items-center gap-2 rounded-pill border-2 border-ink py-1.5 pr-1.5 pl-[22px]"
+        className="m-0 flex items-center gap-2 rounded-pill border-2 border-ink py-1.5 pr-1.5 pl-[22px] has-[input:focus-visible]:outline-2 has-[input:focus-visible]:outline-offset-2 has-[input:focus-visible]:outline-ink"
       >
         <TextField
           aria-label="Ask Boyota"
@@ -257,8 +269,8 @@ export function ChatWindow() {
         <Button
           aria-label={voice === "recording" ? "Stop recording" : "Speak your question"}
           onPress={voice === "recording" ? stopRecording : startRecording}
-          isDisabled={pending || voice === "transcribing"}
-          className={`${focusRing} flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-pill data-[disabled]:cursor-default data-[disabled]:opacity-60 ${
+          isPending={pending || voice === "transcribing"}
+          className={`${focusRing} flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-pill data-[pending]:cursor-default data-[pending]:opacity-60 ${
             voice === "recording"
               ? "bg-ink text-surface"
               : "bg-transparent text-ink data-[hovered]:bg-paper"
@@ -269,8 +281,8 @@ export function ChatWindow() {
         <Button
           type="submit"
           aria-label="Send"
-          isDisabled={busy}
-          className={`${focusRing} flex size-[52px] shrink-0 cursor-pointer items-center justify-center rounded-pill bg-ember text-surface data-[disabled]:cursor-default data-[disabled]:opacity-60`}
+          isPending={busy}
+          className={`${focusRing} flex size-[52px] shrink-0 cursor-pointer items-center justify-center rounded-pill bg-ember text-surface data-[pending]:cursor-default data-[pending]:opacity-60`}
         >
           <Icon name="arrow" size={22} strokeWidth={2.4} />
         </Button>

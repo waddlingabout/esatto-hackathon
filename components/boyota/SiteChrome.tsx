@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Icon } from "./icons";
+import { linkFocusRing } from "./styles";
 
 export function Emblem({ size = 34, reversed = false }: { size?: number; reversed?: boolean }) {
   const road = reversed ? "var(--color-paper)" : "var(--color-ink)";
@@ -20,11 +21,17 @@ export function Emblem({ size = 34, reversed = false }: { size?: number; reverse
 export function SiteHeader() {
   return (
     <header className="border-b border-line bg-paper">
+      <a
+        href="#main"
+        className={`${linkFocusRing} sr-only rounded-pill bg-ink font-semibold text-white no-underline focus:not-sr-only focus:absolute focus:px-5 focus:py-3 focus:top-3 focus:left-3 focus:z-10 hover:text-white`}
+      >
+        Skip to content
+      </a>
       <div className="mx-auto flex max-w-[1280px] flex-wrap items-center justify-between gap-4 px-6 py-3.5">
         <Link
           href="/"
           aria-label="Boyota home"
-          className="flex min-h-11 items-center gap-2.5 text-ink no-underline hover:text-ink"
+          className={`${linkFocusRing} flex min-h-11 items-center gap-2.5 text-ink no-underline hover:text-ink`}
         >
           <Emblem />
           <span className="font-display text-2xl font-extrabold tracking-[0.04em] [font-stretch:125%]">
@@ -33,7 +40,7 @@ export function SiteHeader() {
         </Link>
         <Link
           href="/"
-          className="flex min-h-12 flex-[0_1_420px] items-center gap-2.5 rounded-pill border border-line bg-surface py-0 pr-1.5 pl-[18px] text-[15px] text-steel no-underline hover:text-steel"
+          className={`${linkFocusRing} flex min-h-12 flex-[0_1_420px] items-center gap-2.5 rounded-pill border border-line bg-surface py-0 pr-1.5 pl-[18px] text-[15px] text-steel no-underline hover:text-steel`}
         >
           <span className="grow">Ask Boyota something else…</span>
           <span className="flex size-9 items-center justify-center rounded-pill bg-ink text-white">

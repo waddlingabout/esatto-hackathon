@@ -16,7 +16,7 @@ export function ProductPage({ car, silhouette, searchParams, children }: Props) 
   return (
     <>
       <SiteHeader />
-      <main className="flex-1">
+      <main id="main" className="flex-1">
         <CarConfigurator car={car} silhouette={silhouette} chip={
             <Suspense fallback={null}>
               <AskedChip searchParams={searchParams} />

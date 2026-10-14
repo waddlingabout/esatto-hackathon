@@ -79,9 +79,12 @@ export function Cephalon({ state, size = 64, pulse = 0, className = "" }: Props)
   const laneRef = useRef<HTMLSpanElement>(null);
   const targetRef = useRef<Tuning>(STATES[state]);
   const kickRef = useRef(0);
+  // Set while reduced motion is on: redraws the still frame for a new state.
+  const redrawRef = useRef<() => void>(undefined);
 
   useEffect(() => {
     targetRef.current = STATES[state];
+    redrawRef.current?.();
   }, [state]);
 
   useEffect(() => {
@@ -95,7 +98,7 @@ export function Cephalon({ state, size = 64, pulse = 0, className = "" }: Props)
 
     const ember = rgbOf(canvas);
     const lane = rgbOf(laneRef.current);
-    const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const motion = matchMedia("(prefers-reduced-motion: reduce)");
     const live: Tuning = { ...targetRef.current };
     const pts = Array.from({ length: POINTS }, () => [0, 0]);
     let phase = 0;
@@ -145,7 +148,7 @@ export function Cephalon({ state, size = 64, pulse = 0, className = "" }: Props)
     }
 
     function loop(now: number) {
-      const dt = Math.min((now - last) / 1000, 0.05) * (reduced ? 0.25 : 1);
+      const dt = Math.min((now - last) / 1000, 0.05);
       last = now;
       const ease = 1 - Math.exp(-dt * 2.4);
       for (const k of TUNING_KEYS) live[k] += (targetRef.current[k] - live[k]) * ease;
@@ -154,8 +157,31 @@ export function Cephalon({ state, size = 64, pulse = 0, className = "" }: Props)
       draw(now / 1000);
       raf = requestAnimationFrame(loop);
     }
-    raf = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(raf);
+
+    // Reduced motion: no loop, just the current state's shape, redrawn when the state changes.
+    function still() {
+      Object.assign(live, targetRef.current);
+      kickRef.current = 0;
+      draw(0);
+    }
+    function start() {
+      cancelAnimationFrame(raf);
+      redrawRef.current = motion.matches ? still : undefined;
+      if (motion.matches) {
+        still();
+      } else {
+        last = performance.now();
+        raf = requestAnimationFrame(loop);
+      }
+    }
+
+    motion.addEventListener("change", start);
+    start();
+    return () => {
+      cancelAnimationFrame(raf);
+      motion.removeEventListener("change", start);
+      redrawRef.current = undefined;
+    };
   }, []);
 
   return (
