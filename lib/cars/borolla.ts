@@ -16,9 +16,9 @@ export const borolla: Car = {
   ],
   defaultColorId: "ember",
   trims: [
-    { id: "le", name: "LE", blurb: "The essentials", price: "[LE PRICE]", specs: { mpg: "35", hp: "169" } },
-    { id: "se", name: "SE", blurb: "Sport-tuned", price: "[SE PRICE]", specs: { mpg: "34", hp: "169" } },
-    { id: "xse", name: "XSE", blurb: "Every comfort", price: "[XSE PRICE]", specs: { mpg: "33", hp: "169" } },
+    { id: "le", name: "LE", blurb: "The essentials", price: "$22,950", specs: { mpg: "35", hp: "169" } },
+    { id: "se", name: "SE", blurb: "Sport-tuned", price: "$25,400", specs: { mpg: "34", hp: "169" } },
+    { id: "xse", name: "XSE", blurb: "Every comfort", price: "$27,900", specs: { mpg: "33", hp: "169" } },
   ],
   defaultTrimId: "le",
   headlineSpecs: [
@@ -46,7 +46,7 @@ export const borolla: Car = {
     },
   ],
   compareRows: [
-    { label: "Starting price", values: ["[LE PRICE]", "[SE PRICE]", "[XSE PRICE]"], mono: true },
+    { label: "Starting price", values: ["$22,950", "$25,400", "$27,900"], mono: true },
     { label: "Powertrain", values: ["2.0L gas", "2.0L gas, sport-tuned", "2.0L gas"] },
     { label: "Combined mpg (est.)", values: ["35", "34", "33"], mono: true },
     { label: "Wheels", values: ['16" steel', '18" alloy', '18" alloy, black'] },

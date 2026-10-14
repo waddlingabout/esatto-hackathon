@@ -6,7 +6,7 @@ export type Trim = {
   id: string;
   name: string; // shown in Plex Mono, e.g. "LE"
   blurb: string; // one short line under the name
-  price: string; // placeholder like "[LE PRICE]" until real data exists
+  price: string; // made-up sample price, e.g. "$22,950"
   // Values shown in the ink spec band for this trim, keyed by HeadlineSpec.key.
   specs: Record<string, string>;
 };

@@ -18,21 +18,21 @@ export const bupra: Car = {
       id: "gr",
       name: "GR",
       blurb: "Pure driving",
-      price: "[GR PRICE]",
+      price: "$46,500",
       specs: { zeroSixty: "4.1 s", hp: "382", topSpeed: "155", weight: "3,280" },
     },
     {
       id: "gr-premium",
       name: "GR Premium",
       blurb: "Grand touring",
-      price: "[GR PREMIUM PRICE]",
+      price: "$53,200",
       specs: { zeroSixty: "4.0 s", hp: "382", topSpeed: "155", weight: "3,360" },
     },
     {
       id: "gr-track",
       name: "GR Track",
       blurb: "Built for the circuit",
-      price: "[GR TRACK PRICE]",
+      price: "$61,900",
       specs: { zeroSixty: "3.8 s", hp: "402", topSpeed: "165", weight: "3,190" },
     },
   ],
@@ -64,7 +64,7 @@ export const bupra: Car = {
   compareRows: [
     {
       label: "Starting price",
-      values: ["[GR PRICE]", "[GR PREMIUM PRICE]", "[GR TRACK PRICE]"],
+      values: ["$46,500", "$53,200", "$61,900"],
       mono: true,
     },
     {
