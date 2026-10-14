@@ -84,11 +84,11 @@ const generalExamples: { prompt: string; decision: Decision }[] = [
     },
   },
   {
-    prompt: "I need to change something",
+    prompt: "I want a new car",
     decision: {
       action: "clarify",
       destinationId: null,
-      question: "What would you like to change, e.g. your password or notifications?",
+      question: "What matters most to you: price, fuel economy, or performance?",
     },
   },
 ];
